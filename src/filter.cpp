@@ -48,8 +48,7 @@
 #include <helper_string.h>
 #include "nppi_data_exchange_and_initialization.h"
 
-    bool
-    printfNPPinfo(int argc, char *argv[])
+bool printfNPPinfo(int argc, char *argv[])
 {
   const NppLibraryVersion *libVer = nppGetLibVersion();
 
@@ -150,7 +149,6 @@ int main(int argc, char *argv[])
                                &outputFilePath);
       sResultFilename = outputFilePath;
     }
-    
 
     // declare a host image object for an 8-bit grayscale image
     npp::ImageCPU_8u_C1 oHostSrc;
@@ -185,8 +183,8 @@ int main(int argc, char *argv[])
     */
     Npp16s nLow = 72;
     Npp16s nHigh = 250;
- 
-   //Run edge detection 
+
+    //Run edge detection
     NPP_CHECK_NPP(nppiFilterCannyBorder_8u_C1R(
         oDeviceSrc.data(), oDeviceSrc.pitch(), oSrcSize, oSrcOffset,
         oDeviceDst.data(), oDeviceDst.pitch(), oSizeROI,
@@ -195,72 +193,71 @@ int main(int argc, char *argv[])
         nLow, nHigh,
         nppiNormL2, //nppiNormL1, nppiNormL2,nppiNormInf
         NPP_BORDER_REPLICATE,
-        pDeviceBuffer
-    ));
+        pDeviceBuffer));
 
-     //Clear scratch memory
-     cudaFree(pDeviceBuffer);
+    //Clear scratch memory
+    cudaFree(pDeviceBuffer);
 
-     Npp8u nMinSiteValue = 0;
-     Npp8u nMaxSiteValue = 0;
+    size_t nScratchBufferSize;
+    NPP_CHECK_NPP(nppiDistanceTransformPBAGetBufferSize(oSizeROI, &nScratchBufferSize));
 
-     size_t nScratchBufferSize;
-     NPP_CHECK_NPP(nppiDistanceTransformPBAGetBufferSize(oSizeROI, &nScratchBufferSize));
+    Npp8u *pScratchDeviceBuffer;
+    cudaMalloc((void **)&pScratchDeviceBuffer, nScratchBufferSize);
 
-     Npp8u *pScratchDeviceBuffer;
-     cudaMalloc((void **)&pScratchDeviceBuffer, nScratchBufferSize);
+    //Configure stream
+    NppStreamContext nppStreamCtx;
+    nppStreamCtx.hStream = 0;
+    cudaError_t cudaError = cudaGetDevice(&nppStreamCtx.nCudaDeviceId);
+    if (cudaError != cudaSuccess)
+    {
+      printf("CUDA error: no devices supporting CUDA.\n");
+      return NPP_NOT_SUFFICIENT_COMPUTE_CAPABILITY;
+    }
 
-     NppStreamContext nppStreamCtx;
-     nppStreamCtx.hStream = 0;
-     cudaError_t cudaError = cudaGetDevice(&nppStreamCtx.nCudaDeviceId);
-     if (cudaError != cudaSuccess)
-     {
-       printf("CUDA error: no devices supporting CUDA.\n");
-       return NPP_NOT_SUFFICIENT_COMPUTE_CAPABILITY;
-     }
+    int driverVersion, runtimeVersion;
+    cudaDriverGetVersion(&driverVersion);
+    cudaRuntimeGetVersion(&runtimeVersion);
 
-     int driverVersion, runtimeVersion;
-     cudaDriverGetVersion(&driverVersion);
-     cudaRuntimeGetVersion(&runtimeVersion);
+    printf("CUDA Driver  Version: %d.%d\n", driverVersion / 1000, (driverVersion % 100) / 10);
+    printf("CUDA Runtime Version: %d.%d\n\n", runtimeVersion / 1000, (runtimeVersion % 100) / 10);
 
-     printf("CUDA Driver  Version: %d.%d\n", driverVersion / 1000, (driverVersion % 100) / 10);
-     printf("CUDA Runtime Version: %d.%d\n\n", runtimeVersion / 1000, (runtimeVersion % 100) / 10);
+    cudaError = cudaDeviceGetAttribute(&nppStreamCtx.nCudaDevAttrComputeCapabilityMajor,
+                                       cudaDevAttrComputeCapabilityMajor,
+                                       nppStreamCtx.nCudaDeviceId);
+    if (cudaError != cudaSuccess)
+      return NPP_NOT_SUFFICIENT_COMPUTE_CAPABILITY;
 
-     cudaError = cudaDeviceGetAttribute(&nppStreamCtx.nCudaDevAttrComputeCapabilityMajor,
-                                        cudaDevAttrComputeCapabilityMajor,
-                                        nppStreamCtx.nCudaDeviceId);
-     if (cudaError != cudaSuccess)
-       return NPP_NOT_SUFFICIENT_COMPUTE_CAPABILITY;
+    cudaError = cudaDeviceGetAttribute(&nppStreamCtx.nCudaDevAttrComputeCapabilityMinor,
+                                       cudaDevAttrComputeCapabilityMinor,
+                                       nppStreamCtx.nCudaDeviceId);
+    if (cudaError != cudaSuccess)
+      return NPP_NOT_SUFFICIENT_COMPUTE_CAPABILITY;
 
-     cudaError = cudaDeviceGetAttribute(&nppStreamCtx.nCudaDevAttrComputeCapabilityMinor,
-                                        cudaDevAttrComputeCapabilityMinor,
-                                        nppStreamCtx.nCudaDeviceId);
-     if (cudaError != cudaSuccess)
-       return NPP_NOT_SUFFICIENT_COMPUTE_CAPABILITY;
+    cudaError = cudaStreamGetFlags(nppStreamCtx.hStream, &nppStreamCtx.nStreamFlags);
 
-     cudaError = cudaStreamGetFlags(nppStreamCtx.hStream, &nppStreamCtx.nStreamFlags);
+    cudaDeviceProp oDeviceProperties;
 
-     cudaDeviceProp oDeviceProperties;
+    cudaError = cudaGetDeviceProperties(&oDeviceProperties, nppStreamCtx.nCudaDeviceId);
 
-     cudaError = cudaGetDeviceProperties(&oDeviceProperties, nppStreamCtx.nCudaDeviceId);
+    nppStreamCtx.nMultiProcessorCount = oDeviceProperties.multiProcessorCount;
+    nppStreamCtx.nMaxThreadsPerMultiProcessor = oDeviceProperties.maxThreadsPerMultiProcessor;
+    nppStreamCtx.nMaxThreadsPerBlock = oDeviceProperties.maxThreadsPerBlock;
+    nppStreamCtx.nSharedMemPerBlock = oDeviceProperties.sharedMemPerBlock;
 
-     nppStreamCtx.nMultiProcessorCount = oDeviceProperties.multiProcessorCount;
-     nppStreamCtx.nMaxThreadsPerMultiProcessor = oDeviceProperties.maxThreadsPerMultiProcessor;
-     nppStreamCtx.nMaxThreadsPerBlock = oDeviceProperties.maxThreadsPerBlock;
-     nppStreamCtx.nSharedMemPerBlock = oDeviceProperties.sharedMemPerBlock;
+    Npp8u nMinSiteValue = 0;
+    Npp8u nMaxSiteValue = 72;
+    //Run euclidean distance transform
+    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oSizeROI.width * sizeof(Npp8u), nMinSiteValue, nMaxSiteValue,
+                                                         0, 0,
+                                                         0, 0,
+                                                         0, 0,
+                                                         oDeviceDst2.data(), oSizeROI.width * sizeof(Npp16u),
+                                                         oSizeROI, pScratchDeviceBuffer, nppStreamCtx));
 
-     //Run euclidean distance transform
-     NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oSizeROI.width * sizeof(Npp8u), nMinSiteValue, nMaxSiteValue,
-                                                          0, 0,
-                                                          0, 0,
-                                                          0, 0,
-                                                          oDeviceDst2.data(), oSizeROI.width * sizeof(Npp16u),
-                                                          oSizeROI, pScratchDeviceBuffer, nppStreamCtx));
+    npp::ImageNPP_8u_C1 oDeviceDst3(oSizeROI.width, oSizeROI.height);
+    NPP_CHECK_NPP(nppiConvert_16u8u_C1R(oDeviceDst2.data(), oDeviceDst2.pitch(), oDeviceDst3.data(), oDeviceDst3.pitch(), oSizeROI));
 
-     npp::ImageNPP_8u_C1 oDeviceDst3(oSizeROI.width, oSizeROI.height);
-     NPP_CHECK_NPP(nppiConvert_16u8u_C1R(oDeviceDst2.data(), oDeviceDst2.pitch(), oDeviceDst3.data(), oDeviceDst3.pitch(), oSizeROI));
-
-     /*
+    /*
     // create struct with box-filter mask size
     NppiSize oMaskSize = {5, 5};
 
@@ -282,26 +279,26 @@ int main(int argc, char *argv[])
         NPP_BORDER_REPLICATE));
 */
 
-     // declare a host image for the result
-     npp::ImageCPU_8u_C1 oHostDst(oDeviceDst.size());
-     // and copy the device result data into it
-     oDeviceDst.copyTo(oHostDst.data(), oHostDst.pitch());
+    // declare a host image for the result
+    npp::ImageCPU_8u_C1 oHostDst(oDeviceDst.size());
+    // and copy the device result data into it
+    oDeviceDst.copyTo(oHostDst.data(), oHostDst.pitch());
 
-     //npp::ImageCPU_16u_C1 oHostDst2(oDeviceDst2.size());
-     npp::ImageCPU_8u_C1 oHostDst3(oDeviceDst3.size());
-     // and copy the device result data into it
-     //oDeviceDst2.copyTo(oHostDst2.data(), oHostDst2.pitch());
-     oDeviceDst3.copyTo(oHostDst3.data(), oHostDst3.pitch());
+    //npp::ImageCPU_16u_C1 oHostDst2(oDeviceDst2.size());
+    npp::ImageCPU_8u_C1 oHostDst3(oDeviceDst3.size());
+    // and copy the device result data into it
+    //oDeviceDst2.copyTo(oHostDst2.data(), oHostDst2.pitch());
+    oDeviceDst3.copyTo(oHostDst3.data(), oHostDst3.pitch());
 
-     saveImage(sResultFilename, oHostDst);
-     //saveImage(sResultFilename2, oHostDst2);
-     saveImage(sResultFilename2, oHostDst3);
-     std::cout << "Saved image: " << sResultFilename << std::endl;
+    saveImage(sResultFilename, oHostDst);
+    //saveImage(sResultFilename2, oHostDst2);
+    saveImage(sResultFilename2, oHostDst3);
+    std::cout << "Saved image: " << sResultFilename << std::endl;
 
-     nppiFree(oDeviceSrc.data());
-     nppiFree(oDeviceDst.data());
+    nppiFree(oDeviceSrc.data());
+    nppiFree(oDeviceDst.data());
 
-     exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
   }
   catch (npp::Exception &rException)
   {
