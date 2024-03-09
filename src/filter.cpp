@@ -164,9 +164,15 @@ int main(int argc, char *argv[])
     // create struct with ROI size
     NppiSize oSizeROI = {(int)oDeviceSrc.width(), (int)oDeviceSrc.height()};
 
+
     // allocate device image of appropriately reduced size
     npp::ImageNPP_8u_C1 oDeviceDst(oSizeROI.width, oSizeROI.height);
+    std::cout << oSizeROI.width << " "<<oSizeROI.height << " "<<oDeviceDst.pitch() << std::endl;
+    
+
+
     npp::ImageNPP_16u_C1 oDeviceDst2(oSizeROI.width, oSizeROI.height);
+    std::cout << oSizeROI.width <<" "<< oSizeROI.height << " "<<oDeviceDst2.pitch() << std::endl;
 
     int hpBufferSize;
     NPP_CHECK_NPP(nppiFilterCannyBorderGetBufferSize(oSizeROI, &hpBufferSize));
@@ -243,11 +249,14 @@ int main(int argc, char *argv[])
     nppStreamCtx.nMaxThreadsPerMultiProcessor = oDeviceProperties.maxThreadsPerMultiProcessor;
     nppStreamCtx.nMaxThreadsPerBlock = oDeviceProperties.maxThreadsPerBlock;
     nppStreamCtx.nSharedMemPerBlock = oDeviceProperties.sharedMemPerBlock;
-
-    Npp8u nMinSiteValue = 0;
-    Npp8u nMaxSiteValue = 73;
+    std::cout << "ROI" << oSizeROI.width << " " << oSizeROI.height << std::endl;
+    std::cout << "sizeof(Npp8u):" << sizeof(Npp8u) << " sizeof(Npp16u)" << sizeof(Npp16u) << std::endl;
+    std::cout << "oDeviceDst.pitch()" << oDeviceDst.pitch() << " " << oSizeROI.width * sizeof(Npp8u) << std::endl;
+    Npp8u nMinSiteValue = 250;
+    std::cout << "oDeviceDst2.pitch()" << oDeviceDst2.pitch() << " " << oSizeROI.width * sizeof(Npp16u) << std::endl;
+    Npp8u nMaxSiteValue = 260;
     //Run euclidean distance transform
-    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oDeviceDst.pitch(), nMinSiteValue, nMaxSiteValue,
+    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceSrc.data(), oDeviceSrc.pitch(), nMinSiteValue, nMaxSiteValue,
                                                          0, 0,
                                                          0, 0,
                                                          0, 0,
