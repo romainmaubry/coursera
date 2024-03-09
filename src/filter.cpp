@@ -247,11 +247,11 @@ int main(int argc, char *argv[])
     Npp8u nMinSiteValue = 0;
     Npp8u nMaxSiteValue = 73;
     //Run euclidean distance transform
-    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oSizeROI.width * sizeof(Npp8u), nMinSiteValue, nMaxSiteValue,
+    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oDeviceDst.pitch(), nMinSiteValue, nMaxSiteValue,
                                                          0, 0,
                                                          0, 0,
                                                          0, 0,
-                                                         oDeviceDst2.data(), oSizeROI.width * sizeof(Npp16u),
+                                                         oDeviceDst2.data(), oDeviceDst2.pitch(),
                                                          oSizeROI, pScratchDeviceBuffer, nppStreamCtx));
 
     npp::ImageNPP_8u_C1 oDeviceDst3(oSizeROI.width, oSizeROI.height);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
     saveImage(sResultFilename, oHostDst);
     //saveImage(sResultFilename2, oHostDst2);
     saveImage(sResultFilename2, oHostDst3);
-    std::cout << "Saved image: " << sResultFilename << std::endl;
+    std::cout << "Saved images: " << sResultFilename << " and "<<sResultFilename2<<std::endl;
 
     nppiFree(oDeviceSrc.data());
     nppiFree(oDeviceDst.data());
