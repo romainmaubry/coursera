@@ -1,5 +1,5 @@
-# CUDAatScaleForTheEnterpriseCourseProjectTemplate
-This is a template for the course project for the CUDA at Scale for the Enterprise
+# Final project for CUDAatScaleForTheEnterpriseCourseProjectTemplate
+This is my final project for the course
 
 ## Project Description
 
