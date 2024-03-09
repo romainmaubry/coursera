@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-      filePath = sdkFindFilePath("Lena.pgm", argv[0]);
+      filePath = sdkFindFilePath("data/Lena.pgm", argv[0]);
     }
 
     if (filePath)
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-      sFilename = "Lena.pgm";
+      sFilename = "data/Lena.pgm";
     }
 
     // if we specify the filename at the command line, then we only test
@@ -109,14 +109,14 @@ int main(int argc, char *argv[])
 
     if (infile.good())
     {
-      std::cout << "boxFilterNPP opened: <" << sFilename.data()
+      std::cout << "filter opened: <" << sFilename.data()
                 << "> successfully!" << std::endl;
       file_errors = 0;
       infile.close();
     }
     else
     {
-      std::cout << "boxFilterNPP unable to open: <" << sFilename.data() << ">"
+      std::cout << "filter unable to open: <" << sFilename.data() << ">"
                 << std::endl;
       file_errors++;
       infile.close();
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
       sResultFilename = sResultFilename.substr(0, dot);
     }
 
-    sResultFilename += "_boxFilter.pgm";
+    sResultFilename += "_filter.pgm";
 
     if (checkCmdLineFlag(argc, (const char **)argv, "output"))
     {
