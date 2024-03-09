@@ -163,11 +163,38 @@ int main(int argc, char *argv[])
     // allocate device image of appropriately reduced size
     npp::ImageNPP_8u_C1 oDeviceDst(oSizeROI.width, oSizeROI.height);
 
+    int hpBufferSize;
+    NPP_CHECK_NPP(nppiFilterCannyBorderGetBufferSize(oSizeROI, &hpBufferSize));
+
+    std::cout << "hpBufferSize:" <<hpBufferSize << std::endl;
+
+    Npp8u *pDeviceBuffer = nullptr;
+    cudaMalloc((void **)&pDeviceBuffer, hpBufferSize);
+
+    std::cout << "pDeviceBuffer:" << (pDeviceBuffer!=0) << std::endl;
+
     // run sharpen filter
-    NPP_CHECK_NPP(nppiFilterSharpenBorder_8u_C1R(
+    /* NPP_CHECK_NPP(nppiFilterSharpenBorder_8u_C1R(
         oDeviceSrc.data(), oDeviceSrc.pitch(), oSrcSize, oSrcOffset,
         oDeviceDst.data(), oDeviceDst.pitch(), oSizeROI,
         NPP_BORDER_REPLICATE));
+    */
+    Npp16s nLow = 72;
+    Npp16s nHigh = 250;
+ 
+    NPP_CHECK_NPP(nppiFilterCannyBorder_8u_C1R(
+        oDeviceSrc.data(), oDeviceSrc.pitch(), oSrcSize, oSrcOffset,
+        oDeviceDst.data(), oDeviceDst.pitch(), oSizeROI,
+        NPP_FILTER_SOBEL, //NPP_FILTER_SCHARR
+        NPP_MASK_SIZE_3_X_3,
+        nLow, nHigh,
+        nppiNormL2, //nppiNormL1, nppiNormL2,nppiNormInf
+        NPP_BORDER_REPLICATE,
+        pDeviceBuffer
+    ));
+
+     cudaFree(pDeviceBuffer);
+
     /*
     // create struct with box-filter mask size
     NppiSize oMaskSize = {5, 5};
