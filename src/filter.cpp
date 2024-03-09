@@ -154,6 +154,21 @@ int main(int argc, char *argv[])
     // i.e. upload host to device
     npp::ImageNPP_8u_C1 oDeviceSrc(oHostSrc);
 
+    NppiSize oSrcSize = {(int)oDeviceSrc.width(), (int)oDeviceSrc.height()};
+    NppiPoint oSrcOffset = {0, 0};
+
+    // create struct with ROI size
+    NppiSize oSizeROI = {(int)oDeviceSrc.width(), (int)oDeviceSrc.height()};
+
+    // allocate device image of appropriately reduced size
+    npp::ImageNPP_8u_C1 oDeviceDst(oSizeROI.width, oSizeROI.height);
+
+    // run sharpen filter
+    NPP_CHECK_NPP(nppiFilterSharpenBorder_8u_C1R(
+        oDeviceSrc.data(), oDeviceSrc.pitch(), oSrcSize, oSrcOffset,
+        oDeviceDst.data(), oDeviceDst.pitch(), oSizeROI,
+        NPP_BORDER_REPLICATE));
+    /*
     // create struct with box-filter mask size
     NppiSize oMaskSize = {5, 5};
 
@@ -173,6 +188,7 @@ int main(int argc, char *argv[])
         oDeviceSrc.data(), oDeviceSrc.pitch(), oSrcSize, oSrcOffset,
         oDeviceDst.data(), oDeviceDst.pitch(), oSizeROI, oMaskSize, oAnchor,
         NPP_BORDER_REPLICATE));
+*/
 
     // declare a host image for the result
     npp::ImageCPU_8u_C1 oHostDst(oDeviceDst.size());
