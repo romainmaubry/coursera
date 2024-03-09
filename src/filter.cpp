@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
       sResultFilename = sResultFilename.substr(0, dot);
     }
 
-    std::string sResultFilename2 = sFilename;
+    std::string sResultFilename2 = sResultFilename;
 
     sResultFilename += "_filter.pgm";
     sResultFilename2 += "_filterdist.pgm";
