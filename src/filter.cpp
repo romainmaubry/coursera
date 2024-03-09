@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
     nppStreamCtx.nSharedMemPerBlock = oDeviceProperties.sharedMemPerBlock;
 
     Npp8u nMinSiteValue = 0;
-    Npp8u nMaxSiteValue = 72;
+    Npp8u nMaxSiteValue = 73;
     //Run euclidean distance transform
     NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oSizeROI.width * sizeof(Npp8u), nMinSiteValue, nMaxSiteValue,
                                                          0, 0,
@@ -297,6 +297,8 @@ int main(int argc, char *argv[])
 
     nppiFree(oDeviceSrc.data());
     nppiFree(oDeviceDst.data());
+    nppiFree(oDeviceDst2.data());
+    nppiFree(oDeviceDst3.data());
 
     exit(EXIT_SUCCESS);
   }
