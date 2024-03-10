@@ -344,7 +344,7 @@ filter: filter.o
 	$(EXEC) cp $@ bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
 
 run: build
-	$(EXEC) bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/filter
+	$(EXEC) bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/filter $(ARGS)
 
 clean:
 	rm -f filter filter.o

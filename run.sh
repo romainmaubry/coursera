@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
  make clean build
-
- make run ARGS="-input=data/lena.pgm"
+ make  run
+ make  run ARGS="--input=data/grey-sloth.png"
