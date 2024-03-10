@@ -166,7 +166,6 @@ int main(int argc, char *argv[])
 
     // allocate device image of appropriately reduced size
     npp::ImageNPP_8u_C1 oDeviceDst(oSizeROI.width, oSizeROI.height);
-    npp::ImageNPP_8u_C1 oDeviceDstb(oSizeROI.width, oSizeROI.height);
     npp::ImageNPP_16u_C1 oDeviceDst2(oSizeROI.width, oSizeROI.height);   
 
     int hpBufferSize;
@@ -198,9 +197,6 @@ int main(int argc, char *argv[])
 
     //Clear scratch memory for canny detection
     cudaFree(pDeviceBuffer);
-
-    //Negate image
-    NPP_CHECK_NPP(nppiAndC_8u_C1R(oDeviceDst.data(), oDeviceDst.pitch(), (Npp8u)0, oDeviceDstb.data(), oDeviceDstb.pitch(),oSizeROI));
 
     //Get size of scratch buffer for Distance Transform
     size_t nScratchBufferSize;
@@ -251,11 +247,11 @@ int main(int argc, char *argv[])
     nppStreamCtx.nSharedMemPerBlock = oDeviceProperties.sharedMemPerBlock;
     
     //Set the min/max to detect the sites
-    Npp8u nMinSiteValue = 0;
-    Npp8u nMaxSiteValue = 0;
+    Npp8u nMinSiteValue = 255;
+    Npp8u nMaxSiteValue = 255;
 
     //Run euclidean distance transform
-    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDstb.data(), oDeviceDstb.pitch(), nMinSiteValue, nMaxSiteValue,
+    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oDeviceDst.pitch(), nMinSiteValue, nMaxSiteValue,
                                                          0, 0,
                                                          0, 0,
                                                          0, 0,
@@ -265,30 +261,9 @@ int main(int argc, char *argv[])
     //Clear scratch memory
     cudaFree(pScratchDeviceBuffer);
 
+    //Convert image from 16 bits to 8 bits
     npp::ImageNPP_8u_C1 oDeviceDst3(oSizeROI.width, oSizeROI.height);
     NPP_CHECK_NPP(nppiConvert_16u8u_C1R(oDeviceDst2.data(), oDeviceDst2.pitch(), oDeviceDst3.data(), oDeviceDst3.pitch(), oSizeROI));
-
-    /*
-    // create struct with box-filter mask size
-    NppiSize oMaskSize = {5, 5};
-
-    NppiSize oSrcSize = {(int)oDeviceSrc.width(), (int)oDeviceSrc.height()};
-    NppiPoint oSrcOffset = {0, 0};
-
-    // create struct with ROI size
-    NppiSize oSizeROI = {(int)oDeviceSrc.width(), (int)oDeviceSrc.height()};
-    // allocate device image of appropriately reduced size
-    npp::ImageNPP_8u_C1 oDeviceDst(oSizeROI.width, oSizeROI.height);
-    // set anchor point inside the mask to (oMaskSize.width / 2,
-    // oMaskSize.height / 2) It should round down when odd
-    NppiPoint oAnchor = {oMaskSize.width / 2, oMaskSize.height / 2};
-
-    // run box filter
-    NPP_CHECK_NPP(nppiFilterBoxBorder_8u_C1R(
-        oDeviceSrc.data(), oDeviceSrc.pitch(), oSrcSize, oSrcOffset,
-        oDeviceDst.data(), oDeviceDst.pitch(), oSizeROI, oMaskSize, oAnchor,
-        NPP_BORDER_REPLICATE));
-*/
 
     // declare a host image for the result
     npp::ImageCPU_8u_C1 oHostDst(oDeviceDst.size());
@@ -309,7 +284,6 @@ int main(int argc, char *argv[])
 
     nppiFree(oDeviceSrc.data());
     nppiFree(oDeviceDst.data());
-    nppiFree(oDeviceDstb.data());
     nppiFree(oDeviceDst2.data());
     nppiFree(oDeviceDst3.data());
 
