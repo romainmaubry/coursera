@@ -166,8 +166,8 @@ int main(int argc, char *argv[])
 
     // allocate device image of appropriately reduced size
     npp::ImageNPP_8u_C1 oDeviceDst(oSizeROI.width, oSizeROI.height);
-
-    npp::ImageNPP_16u_C1 oDeviceDst2(oSizeROI.width, oSizeROI.height);
+    npp::ImageNPP_8u_C1 oDeviceDstb(oSizeROI.width, oSizeROI.height);
+    npp::ImageNPP_16u_C1 oDeviceDst2(oSizeROI.width, oSizeROI.height);   
 
     int hpBufferSize;
     NPP_CHECK_NPP(nppiFilterCannyBorderGetBufferSize(oSizeROI, &hpBufferSize));
@@ -199,7 +199,10 @@ int main(int argc, char *argv[])
     //Clear scratch memory for canny detection
     cudaFree(pDeviceBuffer);
 
-    //Get size of scratch buffer for Distance Transform  
+    //Negate image
+    NPP_CHECK_NPP(nppiAndC_8u_C1R(oDeviceDst.data(), oDeviceDst.pitch(), (Npp8u)0, oDeviceDstb.data(), oDeviceDstb.pitch(),oSizeROI));
+
+    //Get size of scratch buffer for Distance Transform
     size_t nScratchBufferSize;
     NPP_CHECK_NPP(nppiDistanceTransformPBAGetBufferSize(oSizeROI, &nScratchBufferSize));
 
@@ -248,11 +251,11 @@ int main(int argc, char *argv[])
     nppStreamCtx.nSharedMemPerBlock = oDeviceProperties.sharedMemPerBlock;
     
     //Set the min/max to detect the sites
-    Npp8u nMinSiteValue = 255;
-    Npp8u nMaxSiteValue = 255;
+    Npp8u nMinSiteValue = 0;
+    Npp8u nMaxSiteValue = 0;
 
     //Run euclidean distance transform
-    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oDeviceDst.pitch(), nMinSiteValue, nMaxSiteValue,
+    NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDstb.data(), oDeviceDstb.pitch(), nMinSiteValue, nMaxSiteValue,
                                                          0, 0,
                                                          0, 0,
                                                          0, 0,
@@ -306,6 +309,7 @@ int main(int argc, char *argv[])
 
     nppiFree(oDeviceSrc.data());
     nppiFree(oDeviceDst.data());
+    nppiFree(oDeviceDstb.data());
     nppiFree(oDeviceDst2.data());
     nppiFree(oDeviceDst3.data());
 
