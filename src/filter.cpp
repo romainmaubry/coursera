@@ -196,12 +196,14 @@ int main(int argc, char *argv[])
         NPP_BORDER_REPLICATE,
         pDeviceBuffer));
 
-    //Clear scratch memory
+    //Clear scratch memory for canny detection
     cudaFree(pDeviceBuffer);
 
+    //Get size of scratch buffer for Distance Transform  
     size_t nScratchBufferSize;
     NPP_CHECK_NPP(nppiDistanceTransformPBAGetBufferSize(oSizeROI, &nScratchBufferSize));
 
+    // Allocate scratch buffer
     Npp8u *pScratchDeviceBuffer;
     cudaMalloc((void **)&pScratchDeviceBuffer, nScratchBufferSize);
 
@@ -245,8 +247,10 @@ int main(int argc, char *argv[])
     nppStreamCtx.nMaxThreadsPerBlock = oDeviceProperties.maxThreadsPerBlock;
     nppStreamCtx.nSharedMemPerBlock = oDeviceProperties.sharedMemPerBlock;
     
-    Npp8u nMinSiteValue = 0;
-    Npp8u nMaxSiteValue = 0;
+    //Set the min/max to detect the sites
+    Npp8u nMinSiteValue = 255;
+    Npp8u nMaxSiteValue = 255;
+
     //Run euclidean distance transform
     NPP_CHECK_NPP(nppiDistanceTransformPBA_8u16u_C1R_Ctx(oDeviceDst.data(), oDeviceDst.pitch(), nMinSiteValue, nMaxSiteValue,
                                                          0, 0,
